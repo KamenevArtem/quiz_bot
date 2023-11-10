@@ -1,6 +1,8 @@
 import logging
 import os
 
+import telegram
+
 from dotenv import load_dotenv
 from telegram import ForceReply
 from telegram import Update
@@ -19,9 +21,14 @@ logger = logging.getLogger('Logger')
 
 def start(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
+    custom_keyboard = [['Новый вопрос', 'Сдаться'],
+                       ['Посмотреть счёт']]
+    reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard,
+                                                one_time_keyboard=True
+                                                )
     update.message.reply_markdown_v2(
         fr'Hi {user.mention_markdown_v2()}\!',
-        reply_markup=ForceReply(selective=True),
+        reply_markup=reply_markup,
     )
 
 
@@ -29,15 +36,19 @@ def echo(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(update.message.text)
 
 
-def main():
-    load_dotenv()
-    tg_bot_token = os.environ['TELEGRAM_BOT_TOKEN']
-    updater = Updater(tg_bot_token)
+def telegram_bot(token):
+    updater = Updater(token=token)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
     updater.start_polling()
     updater.idle()
+
+
+def main():
+    load_dotenv()
+    tg_bot_token = os.environ['TELEGRAM_BOT_TOKEN']
+    telegram_bot(tg_bot_token, chat_id)
 
 
 if __name__ == '__main__':
