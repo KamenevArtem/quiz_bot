@@ -3,6 +3,7 @@ import os
 import random
 
 import telegram
+import redis
 
 from dotenv import load_dotenv
 from telegram import ForceReply
@@ -20,6 +21,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 logger = logging.getLogger('Logger')
+data_base = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -36,14 +38,15 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 def handle_question(update: Update, context: CallbackContext) -> None:
+    user = update.effective_user
     quiz_dict, title = create_parsed_description()
     question, answer = random.choice(quiz_dict[title]).values()
-    print(question)
+    data_base.set(user.id, question)
     if update.message.text == "Новый вопрос":
         update.message.reply_text(text=question)
 
 
-def telegram_bot(token):
+def telegram_bot(token,data_base):
     updater = Updater(token=token)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler("start", start))
@@ -58,7 +61,7 @@ def telegram_bot(token):
 def main():
     load_dotenv()
     tg_bot_token = os.environ['TELEGRAM_BOT_TOKEN']
-    telegram_bot(tg_bot_token)
+    telegram_bot(tg_bot_token, data_base)
 
 
 if __name__ == '__main__':
