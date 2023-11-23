@@ -22,6 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger('Logger')
 data_base = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+quiz_dict, title = create_parsed_description()
 
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -32,18 +33,25 @@ def start(update: Update, context: CallbackContext) -> None:
                                                 one_time_keyboard=True
                                                 )
     update.message.reply_markdown_v2(
-        fr'Hi {user.mention_markdown_v2()}\!',
+        fr'Здравствуйте, {user.mention_markdown_v2()}\!',
         reply_markup=reply_markup,
     )
 
 
 def handle_question(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-    quiz_dict, title = create_parsed_description()
-    question, answer = random.choice(quiz_dict[title]).values()
-    data_base.set(user.id, question)
+    random_task = random.choice(quiz_dict[title])
+    question, answer = random_task.values()
     if update.message.text == "Новый вопрос":
+        pipe = data_base.pipeline()
+        pipe.set(user.id, question)
+        pipe.set(question, answer[0])
+        pipe.execute()
         update.message.reply_text(text=question)
+    elif update.message.text in data_base.get(data_base.get(user.id)):
+        update.message.reply_text(text="Ответ - верный")
+    else:
+        update.message.reply_text(text="Попробуйте снова")
 
 
 def telegram_bot(token,data_base):
