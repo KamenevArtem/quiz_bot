@@ -32,19 +32,36 @@ class UserStates(IntEnum):
     START_CHOICE = 1
     NEW_QUESTION_CHOICE = 2
     USERS_ANSWER = 3
-    QUIT_CHOICE = 4
+
+
+def create_tg_keyboard_markup(
+        buttons_text: list,
+        buttons_per_row: int = 2,
+        need_start: bool = False
+) -> telegram.ReplyKeyboardMarkup:
+    keyboard_buttons = [telegram.KeyboardButton(text) for text in buttons_text]
+
+    rows = [
+        keyboard_buttons[i:i + buttons_per_row] for i in
+        range(0, len(keyboard_buttons), buttons_per_row)
+    ]
+    if need_start:
+        rows.append([telegram.KeyboardButton('Стартовое меню')])
+
+    return telegram.ReplyKeyboardMarkup(
+        rows,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
 
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
-    custom_keyboard = [['Новый вопрос', 'Сдаться'],
-                       ['Посмотреть счёт']]
-    reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard,
-                                                one_time_keyboard=True
-                                                )
     update.message.reply_markdown_v2(
         fr'Здравствуйте, {user.mention_markdown_v2()}\!',
-        reply_markup=reply_markup,
+        reply_markup=create_tg_keyboard_markup(
+            ['Новый вопрос', 'Сдаться', 'Посмотреть счёт']
+            )
     )
     return UserStates.NEW_QUESTION_CHOICE
 
@@ -67,21 +84,51 @@ def handle_question(update: Update, context: CallbackContext):
     pipe.set(user.id, question)
     pipe.set(question, answer[0])
     pipe.execute()
-    update.message.reply_text(text=f'{question} Если Вы хотите сдаться и '
-                              'перейти в начальное меню, напишите мне "Сдаться"')
+    update.message.reply_text(text=question,
+                              reply_markup=create_tg_keyboard_markup(
+                                  ['Сдаться', 'Закончить игру']
+                                  )
+                              )
     return UserStates.USERS_ANSWER
 
 
 def handle_answer(update: Update, context: CallbackContext):
     user_answer = update.message.text
     if user_answer in data_base.get(data_base.get(update.effective_chat.id)):
-        update.message.reply_text(text="Ответ - верный")
-        return ConversationHandler.END
-    elif user_answer == 'Сдаться':
-        return UserStates.QUIT_CHOICE
+        update.message.reply_text(
+            text="Ответ - верный",
+            reply_markup=create_tg_keyboard_markup(
+                ['Новый вопрос', 'Закончить игру']
+            )
+            )
+        return UserStates.NEW_QUESTION_CHOICE
     else:
-        update.message.reply_text(text="Попробуйте снова")
+        
+        update.message.reply_markdown_v2(
+            fr'Попробуйте снова',
+            reply_markup=create_tg_keyboard_markup(
+                ['Сдаться', 'Закончить игру']
+            )
+        )   
         return UserStates.USERS_ANSWER
+
+
+def quit_the_game(update: Update, context: CallbackContext):
+    user = update.effective_user.id
+    answer = data_base.get(data_base.get(update.effective_user.id))
+    random_task = random.choice(quiz_dict[title])
+    question, new_answer = random_task.values()
+    pipe = data_base.pipeline()
+    pipe.set(user, question)
+    pipe.set(question, new_answer[0])
+    pipe.execute()
+    update.message.reply_text(
+        text=f'Ответ: {answer}. Ваш новый вопрос: {question}',
+        reply_markup=create_tg_keyboard_markup(
+            ['Сдаться', 'Закончить игру']
+            )
+        )
+    return UserStates.USERS_ANSWER
 
 
 def telegram_bot(token):
@@ -103,11 +150,19 @@ def telegram_bot(token):
                 MessageHandler(
                     Filters.text('Сдаться'),
                     cancel
-                    )
+                    ),
+                MessageHandler(
+                    Filters.text('Закончить игру'),
+                    cancel
+                )
             ],
             UserStates.USERS_ANSWER: [
                 MessageHandler(
                     Filters.text("Сдаться"),
+                    quit_the_game
+                    ),
+                MessageHandler(
+                    Filters.text("Закончить игру"),
                     cancel
                     ),
                 MessageHandler(
@@ -116,12 +171,6 @@ def telegram_bot(token):
                     pass_user_data=True
                     )
             ],
-            UserStates.QUIT_CHOICE: [
-                MessageHandler(
-                    Filters.text("Сдаться"),
-                    cancel
-                    )
-            ]
         },
         fallbacks=[
         CommandHandler(
