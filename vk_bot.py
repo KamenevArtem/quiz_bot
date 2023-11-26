@@ -15,7 +15,7 @@ def echo(event, vk_api):
     )
 
 
-if __name__ == "__main__":
+def main():
     load_dotenv()
     vk_session = vk.VkApi(token=os.environ['VK_API_KEY'])
     vk_api = vk_session.get_api()
@@ -23,3 +23,7 @@ if __name__ == "__main__":
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             echo(event, vk_api)
+
+
+if __name__ == "__main__":
+    main()
