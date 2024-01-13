@@ -19,7 +19,6 @@ def handle_new_question(event, vk_api, data_base, quiz_dict, title, keyboard):
     pipe.set(event.user_id, question)
     pipe.set(question, answer[0])
     pipe.execute()
-    print(answer[0])
     vk_api.messages.send(
         user_id=event.user_id,
         message=question,
