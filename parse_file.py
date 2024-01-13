@@ -6,7 +6,10 @@ logger = logging.getLogger('Logger')
 
 
 def create_parsed_description():
-    with open('/quiz-questions/1vs1200.txt', "r", encoding='KOI8-R') as file_content:
+    with open(
+            '/quiz-questions/1vs1200.txt',
+            "r",
+            encoding='KOI8-R') as file_content:
         quiz_description = file_content.read()
     title = quiz_description.split('\n')[1]
     quiz_dict = dict()

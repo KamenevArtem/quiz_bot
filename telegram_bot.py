@@ -8,7 +8,6 @@ import redis
 from enum import IntEnum
 
 from dotenv import load_dotenv
-from telegram import ForceReply
 from telegram import Update
 from telegram.ext import Filters
 from telegram.ext import CallbackContext
@@ -21,10 +20,15 @@ from parse_file import create_parsed_description
 
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
 )
 logger = logging.getLogger('Logger')
-data_base = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+data_base = redis.Redis(
+    host='localhost',
+    port=6379, db=0,
+    decode_responses=True
+    )
 quiz_dict, title = create_parsed_description()
 
 
@@ -84,11 +88,12 @@ def handle_question(update: Update, context: CallbackContext):
     pipe.set(user.id, question)
     pipe.set(question, answer[0])
     pipe.execute()
-    update.message.reply_text(text=question,
-                              reply_markup=create_tg_keyboard_markup(
-                                  ['Сдаться', 'Закончить игру']
-                                  )
-                              )
+    update.message.reply_text(
+        text=question,
+        reply_markup=create_tg_keyboard_markup(
+            ['Сдаться', 'Закончить игру']
+            )
+        )
     return UserStates.USERS_ANSWER
 
 
@@ -99,17 +104,16 @@ def handle_answer(update: Update, context: CallbackContext):
             text="Ответ - верный",
             reply_markup=create_tg_keyboard_markup(
                 ['Новый вопрос', 'Закончить игру']
-            )
+                )
             )
         return UserStates.NEW_QUESTION_CHOICE
     else:
-        
         update.message.reply_markdown_v2(
-            fr'Попробуйте снова',
+            'Попробуйте снова',
             reply_markup=create_tg_keyboard_markup(
                 ['Сдаться', 'Закончить игру']
             )
-        )   
+        )
         return UserStates.USERS_ANSWER
 
 
@@ -173,15 +177,15 @@ def telegram_bot(token):
             ],
         },
         fallbacks=[
-        CommandHandler(
-            'cancel',
-            cancel
-            ),
-        MessageHandler(
-            Filters.text('отмена'),
-            cancel
-            ),
-        ]
+            CommandHandler(
+                'cancel',
+                cancel
+                ),
+            MessageHandler(
+                Filters.text('отмена'),
+                cancel
+                ),
+            ]
     )
     dispatcher.add_handler(conversation)
     updater.start_polling()
