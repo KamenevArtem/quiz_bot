@@ -1,13 +1,11 @@
-import logging
+import os
 import re
 
 
-logger = logging.getLogger('Logger')
-
-
-def create_parsed_description():
+def create_parsed_description(file_name):
+    questions_file_path = os.path.join('./quiz-questions/', '1vs1200.txt')
     with open(
-            '/quiz-questions/1vs1200.txt',
+            questions_file_path,
             "r",
             encoding='KOI8-R') as file_content:
         quiz_description = file_content.read()

@@ -8,6 +8,7 @@ import redis
 from enum import IntEnum
 
 from dotenv import load_dotenv
+from functools import partial
 from telegram import Update
 from telegram.ext import Filters
 from telegram.ext import CallbackContext
@@ -29,7 +30,6 @@ data_base = redis.Redis(
     port=6379, db=0,
     decode_responses=True
     )
-quiz_dict, title = create_parsed_description()
 
 
 class UserStates(IntEnum):
@@ -59,10 +59,11 @@ def create_tg_keyboard_markup(
     )
 
 
-def start(update: Update, context: CallbackContext):
+def start(update: Update, context: CallbackContext, title):
     user = update.effective_user
-    update.message.reply_markdown_v2(
-        fr'Здравствуйте, {user.mention_markdown_v2()}\!',
+    update.message.reply_text(
+        text=f'Здравствуйте, {user.full_name}!'
+             f' Тема сегодняшней игры: {title}.',
         reply_markup=create_tg_keyboard_markup(
             ['Новый вопрос', 'Сдаться', 'Посмотреть счёт']
             )
@@ -80,7 +81,7 @@ def cancel(update, _):
     return ConversationHandler.END
 
 
-def handle_question(update: Update, context: CallbackContext):
+def handle_question(update: Update, context: CallbackContext, quiz_dict, title):
     user = update.effective_user
     random_task = random.choice(quiz_dict[title])
     question, answer = random_task.values()
@@ -117,7 +118,7 @@ def handle_answer(update: Update, context: CallbackContext):
         return UserStates.USERS_ANSWER
 
 
-def quit_the_game(update: Update, context: CallbackContext):
+def quit_the_game(update: Update, context: CallbackContext, quiz_dict, title):
     user = update.effective_user.id
     answer = data_base.get(data_base.get(update.effective_user.id))
     random_task = random.choice(quiz_dict[title])
@@ -135,21 +136,24 @@ def quit_the_game(update: Update, context: CallbackContext):
     return UserStates.USERS_ANSWER
 
 
-def telegram_bot(token):
+def telegram_bot(token, quiz_dict, title):
     updater = Updater(token=token)
     dispatcher = updater.dispatcher
     conversation = ConversationHandler(
         entry_points=[CommandHandler(
             'start',
-            start
+            partial(start, title=title)
             )
         ],
         states={
             UserStates.NEW_QUESTION_CHOICE: [
                 MessageHandler(
                     Filters.text('Новый вопрос'),
-                    handle_question,
-                    pass_user_data=True
+                    partial(
+                        handle_question,
+                        quiz_dict=quiz_dict,
+                        title=title
+                        )
                 ),
                 MessageHandler(
                     Filters.text('Сдаться'),
@@ -158,12 +162,16 @@ def telegram_bot(token):
                 MessageHandler(
                     Filters.text('Закончить игру'),
                     cancel
-                )
+                    )
             ],
             UserStates.USERS_ANSWER: [
                 MessageHandler(
                     Filters.text("Сдаться"),
-                    quit_the_game
+                    partial(
+                        quit_the_game,
+                        quiz_dict=quiz_dict,
+                        title=title
+                        )
                     ),
                 MessageHandler(
                     Filters.text("Закончить игру"),
@@ -173,6 +181,10 @@ def telegram_bot(token):
                     Filters.text,
                     handle_answer,
                     pass_user_data=True
+                    ),
+                CommandHandler(
+                    'start',
+                    start
                     )
             ],
         },
@@ -195,7 +207,9 @@ def telegram_bot(token):
 def main():
     load_dotenv()
     tg_bot_token = os.environ['TELEGRAM_BOT_TOKEN']
-    telegram_bot(tg_bot_token)
+    file_name = os.environ['FILE_NAME']
+    quiz_dict, title = create_parsed_description(file_name)
+    telegram_bot(tg_bot_token, quiz_dict, title)
 
 
 if __name__ == '__main__':
