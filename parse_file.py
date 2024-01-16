@@ -1,3 +1,4 @@
+import collections
 import os
 import re
 
@@ -10,8 +11,7 @@ def create_parsed_description(file_name):
             encoding='KOI8-R') as file_content:
         quiz_description = file_content.read()
     title = quiz_description.split('\n')[1]
-    quiz_dict = dict()
-    quiz_dict[title] = list()
+    quiz_dict = {}
     regular_expression = r"""(Вопрос\s\d+:\n)(.*(?:\n(?!Ответ:$).*)*)
                               \n+(Ответ:$)\n
                               (.*(?:\n(?!Вопрос\s\d+:\n)|(?!Typ:\n).*)*)\n+"""
@@ -26,7 +26,7 @@ def create_parsed_description(file_name):
         answer = parsed_description[3]
         answer_short = answer.split(".")[0]
         answer_full = ".".join(answer.split(".")[1:])
-        quiz_dict[title].append(
+        quiz_dict.setdefault(title, []).append(
             {
                 'Вопрос': question,
                 'Ответ': [answer_short, answer_full]
