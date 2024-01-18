@@ -20,10 +20,6 @@ from telegram.ext import Updater
 from parse_file import create_parsed_description
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger('Logger')
 data_base = redis.Redis(
     host='localhost',
@@ -208,6 +204,10 @@ def main():
     load_dotenv()
     tg_bot_token = os.environ['TELEGRAM_BOT_TOKEN']
     file_name = os.environ['FILE_NAME']
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+        )
     quiz_dict, title = create_parsed_description(file_name)
     telegram_bot(tg_bot_token, quiz_dict, title)
 
