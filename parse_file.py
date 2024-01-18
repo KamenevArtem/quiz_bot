@@ -21,9 +21,12 @@ def create_parsed_description(file_name):
         re.VERBOSE | re.MULTILINE
         )
     for parsed_description in parsed_descriptions:
-        question = parsed_description[1]
+        parsed_description = tuple(
+            description for description in parsed_description
+            if description != "Ответ:"
+            )
+        question_number, question, answer = parsed_description
         question = " ".join(question.split('\n'))
-        answer = parsed_description[3]
         answer_short = answer.split(".")[0]
         answer_full = ".".join(answer.split(".")[1:])
         quiz_dict.setdefault(title, []).append(
