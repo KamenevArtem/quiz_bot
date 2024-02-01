@@ -64,7 +64,7 @@ def handle_unknown(event, vk_api):
                 )
 
 
-def launch_vk_bot(vk_token):
+def launch_vk_bot(vk_token, quiz_dict, title):
     vk_session = vk.VkApi(token=vk_token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
@@ -74,7 +74,6 @@ def launch_vk_bot(vk_token):
         db=0,
         decode_responses=True
         )
-    quiz_dict, title = create_parsed_description()
     keyboard = VkKeyboard(one_time=True)
     keyboard.add_button('Новый вопрос', color=VkKeyboardColor.PRIMARY)
     keyboard.add_button('Сдаться', color=VkKeyboardColor.PRIMARY)
@@ -103,8 +102,10 @@ def launch_vk_bot(vk_token):
 
 def main():
     load_dotenv()
+    file_name = os.environ['FILE_NAME']
     vk_token = os.environ['VK_API_KEY']
-    launch_vk_bot(vk_token)
+    quiz_dict, title = create_parsed_description(file_name)
+    launch_vk_bot(vk_token, quiz_dict, title)
 
 
 if __name__ == "__main__":

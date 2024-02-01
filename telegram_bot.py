@@ -20,14 +20,7 @@ from telegram.ext import Updater
 from parse_file import create_parsed_description
 
 
-load_dotenv()
 logger = logging.getLogger('Logger')
-data_base = redis.Redis(
-    os.environ['REDIS_HOST'],
-    os.environ['REDIS_PORT'],
-    db=0,
-    decode_responses=True
-    )
 
 
 class UserStates(IntEnum):
@@ -79,7 +72,7 @@ def cancel(update, _):
     return ConversationHandler.END
 
 
-def handle_question(update: Update, context: CallbackContext, quiz_dict, title):
+def handle_question(update: Update, context: CallbackContext, quiz_dict, title, data_base):
     user = update.effective_user
     random_task = random.choice(quiz_dict[title])
     question, answer = random_task.values()
@@ -96,7 +89,7 @@ def handle_question(update: Update, context: CallbackContext, quiz_dict, title):
     return UserStates.USERS_ANSWER
 
 
-def handle_answer(update: Update, context: CallbackContext):
+def handle_answer(update: Update, context: CallbackContext, data_base):
     user_answer = update.message.text
     if user_answer in data_base.get(data_base.get(update.effective_chat.id)):
         update.message.reply_text(
@@ -116,7 +109,7 @@ def handle_answer(update: Update, context: CallbackContext):
         return UserStates.USERS_ANSWER
 
 
-def quit_the_game(update: Update, context: CallbackContext, quiz_dict, title):
+def quit_the_game(update: Update, context: CallbackContext, quiz_dict, title, data_base):
     user = update.effective_user.id
     answer = data_base.get(data_base.get(update.effective_user.id))
     random_task = random.choice(quiz_dict[title])
@@ -134,7 +127,7 @@ def quit_the_game(update: Update, context: CallbackContext, quiz_dict, title):
     return UserStates.USERS_ANSWER
 
 
-def launch_telegram_bot(token, quiz_dict, title):
+def launch_telegram_bot(token, quiz_dict, title, data_base):
     updater = Updater(token=token)
     dispatcher = updater.dispatcher
     conversation = ConversationHandler(
@@ -150,7 +143,8 @@ def launch_telegram_bot(token, quiz_dict, title):
                     partial(
                         handle_question,
                         quiz_dict=quiz_dict,
-                        title=title
+                        title=title,
+                        data_base=data_base
                         )
                 ),
                 MessageHandler(
@@ -168,7 +162,8 @@ def launch_telegram_bot(token, quiz_dict, title):
                     partial(
                         quit_the_game,
                         quiz_dict=quiz_dict,
-                        title=title
+                        title=title,
+                        data_base=data_base
                         )
                     ),
                 MessageHandler(
@@ -177,8 +172,11 @@ def launch_telegram_bot(token, quiz_dict, title):
                     ),
                 MessageHandler(
                     Filters.text,
-                    handle_answer,
-                    pass_user_data=True
+                    partial(
+                        handle_answer,
+                        data_base=data_base,
+                        pass_user_data=True
+                        )
                     ),
                 CommandHandler(
                     'start',
@@ -203,14 +201,21 @@ def launch_telegram_bot(token, quiz_dict, title):
 
 
 def main():
+    load_dotenv()
     tg_bot_token = os.environ['TELEGRAM_BOT_TOKEN']
     file_name = os.environ['FILE_NAME']
+    data_base = redis.Redis(
+        os.environ['REDIS_HOST'],
+        os.environ['REDIS_PORT'],
+        db=0,
+        decode_responses=True
+        )
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
         )
     quiz_dict, title = create_parsed_description(file_name)
-    launch_telegram_bot(tg_bot_token, quiz_dict, title)
+    launch_telegram_bot(tg_bot_token, quiz_dict, title, data_base)
 
 
 if __name__ == '__main__':
