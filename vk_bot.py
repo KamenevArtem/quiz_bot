@@ -64,7 +64,7 @@ def handle_unknown(event, vk_api):
                 )
 
 
-def vk_bot(vk_token):
+def launch_vk_bot(vk_token):
     vk_session = vk.VkApi(token=vk_token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
@@ -104,7 +104,7 @@ def vk_bot(vk_token):
 def main():
     load_dotenv()
     vk_token = os.environ['VK_API_KEY']
-    vk_bot(vk_token)
+    launch_vk_bot(vk_token)
 
 
 if __name__ == "__main__":

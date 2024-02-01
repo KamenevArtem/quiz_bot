@@ -134,7 +134,7 @@ def quit_the_game(update: Update, context: CallbackContext, quiz_dict, title):
     return UserStates.USERS_ANSWER
 
 
-def telegram_bot(token, quiz_dict, title):
+def launch_telegram_bot(token, quiz_dict, title):
     updater = Updater(token=token)
     dispatcher = updater.dispatcher
     conversation = ConversationHandler(
@@ -210,7 +210,7 @@ def main():
         level=logging.INFO
         )
     quiz_dict, title = create_parsed_description(file_name)
-    telegram_bot(tg_bot_token, quiz_dict, title)
+    launch_telegram_bot(tg_bot_token, quiz_dict, title)
 
 
 if __name__ == '__main__':
