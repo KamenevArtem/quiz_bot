@@ -44,7 +44,7 @@ def create_tg_keyboard_markup(
     keyboard_buttons = [telegram.KeyboardButton(text) for text in buttons_text]
 
     rows = [
-        keyboard_buttons[i:i + buttons_per_row] for i in
+        keyboard_buttons[button:button + buttons_per_row] for button in
         range(0, len(keyboard_buttons), buttons_per_row)
     ]
     if need_start:
