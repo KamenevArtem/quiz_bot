@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import random
@@ -203,18 +204,26 @@ def launch_telegram_bot(token, quiz_dict, title, data_base):
 def main():
     load_dotenv()
     tg_bot_token = os.environ['TELEGRAM_BOT_TOKEN']
-    file_name = os.environ['FILE_NAME']
     data_base = redis.Redis(
         os.environ['REDIS_HOST'],
         os.environ['REDIS_PORT'],
         db=0,
         decode_responses=True
         )
+    parser = argparse.ArgumentParser(description='Бот-викторина в телеграм')
+    parser.add_argument(
+        '-fp', '--file_path', help='Директория с файлами', default='./quiz-questions/'
+        )
+    parser.add_argument(
+        '-fn', '--file_name', help='Название файла', default='1vs1200.txt'
+        )
+    arguments = parser.parse_args()
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
         )
-    quiz_dict, title = create_parsed_description(file_name)
+    file_path = os.path.join(arguments.file_path, arguments.file_name)
+    quiz_dict, title = create_parsed_description(file_path)
     launch_telegram_bot(tg_bot_token, quiz_dict, title, data_base)
 
 

@@ -1,3 +1,4 @@
+import argparse
 import random
 import os
 
@@ -102,9 +103,17 @@ def launch_vk_bot(vk_token, quiz_dict, title):
 
 def main():
     load_dotenv()
-    file_name = os.environ['FILE_NAME']
     vk_token = os.environ['VK_API_KEY']
-    quiz_dict, title = create_parsed_description(file_name)
+    parser = argparse.ArgumentParser(description='Бот-викторина в телеграм')
+    parser.add_argument(
+        '-fp', '--file_path', help='Директория с файлами', default='./quiz-questions/'
+        )
+    parser.add_argument(
+        '-fn', '--file_name', help='Название файла', default='1vs1200.txt'
+        )
+    arguments = parser.parse_args()
+    file_path = os.path.join(arguments.file_path, arguments.file_name)
+    quiz_dict, title = create_parsed_description(file_path)
     launch_vk_bot(vk_token, quiz_dict, title)
 
 
