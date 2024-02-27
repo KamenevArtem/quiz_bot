@@ -4,7 +4,6 @@ import re
 
 
 def create_parsed_description(questions_file_path):
-    questions_file_path = os.path.join('./quiz-questions/', '1vs1200.txt')
     with open(
             questions_file_path,
             "r",
